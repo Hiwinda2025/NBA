@@ -98,31 +98,75 @@ class NBANewsApp {
             }
             
             console.log('正在加载NBA新闻...');
-            const response = await fetch('/api/news');
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            // 首先尝试API调用
+            try {
+                const response = await fetch('/api/news', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 10000
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.success && result.data && result.data.length > 0) {
+                        this.newsData = result.data;
+                        this.renderNews();
+                        this.updateStatus(this.newsData.length, result.timestamp);
+                        console.log(`成功从API加载 ${this.newsData.length} 条新闻`);
+                        return;
+                    }
+                }
+            } catch (apiError) {
+                console.warn('API调用失败，使用后备数据:', apiError.message);
             }
             
-            const result = await response.json();
-            
-            if (result.success && result.data) {
-                this.newsData = result.data;
-                this.renderNews();
-                this.updateStatus(this.newsData.length, result.timestamp);
-                console.log(`成功加载 ${this.newsData.length} 条新闻`);
-            } else {
-                throw new Error('获取新闻数据失败');
-            }
+            // API失败时使用后备数据
+            this.loadFallbackData();
             
         } catch (error) {
             console.error('加载新闻时出错:', error);
-            this.showError('Failed to load news. Please try again.');
+            this.loadFallbackData();
         } finally {
             if (showLoader) {
                 this.showLoading(false);
             }
         }
+    }
+
+    // 加载后备数据
+    loadFallbackData() {
+        console.log('使用后备静态数据...');
+        
+        // 检查是否有全局数据
+        if (window.NBA_NEWS_DATA) {
+            const fallbackData = [];
+            
+            // 合并所有类型的数据
+            if (window.NBA_NEWS_DATA.news) {
+                fallbackData.push(...window.NBA_NEWS_DATA.news);
+            }
+            if (window.NBA_NEWS_DATA.scores) {
+                fallbackData.push(...window.NBA_NEWS_DATA.scores);
+            }
+            if (window.NBA_NEWS_DATA.schedule) {
+                fallbackData.push(...window.NBA_NEWS_DATA.schedule);
+            }
+            
+            if (fallbackData.length > 0) {
+                this.newsData = fallbackData;
+                this.renderNews();
+                this.updateStatus(this.newsData.length, new Date().toISOString());
+                console.log(`成功加载后备数据 ${this.newsData.length} 条`);
+                return;
+            }
+        }
+        
+        // 如果没有后备数据，显示错误状态
+        this.showError('Unable to load NBA news. Please check your connection and try again.');
     }
 
     // 手动刷新新闻
@@ -133,26 +177,34 @@ class NBANewsApp {
             this.showLoading(true);
             console.log('手动刷新新闻...');
             
-            const response = await fetch('/api/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+            // 首先尝试刷新API
+            try {
+                const response = await fetch('/api/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    timeout: 15000
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // 刷新成功后重新加载数据
+                        await this.loadNews(false);
+                        this.showToast('News refreshed successfully!', 'success');
+                        return;
+                    }
                 }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            } catch (refreshError) {
+                console.warn('API刷新失败:', refreshError.message);
             }
             
-            const result = await response.json();
-            
-            if (result.success) {
-                // 刷新成功后重新加载数据
-                await this.loadNews(false);
-                this.showToast('News refreshed successfully!', 'success');
-            } else {
-                throw new Error(result.message || '刷新失败');
-            }
+            // API刷新失败时，重新加载后备数据
+            this.loadFallbackData();
+            this.showToast('Using cached data. Please try again later.', 'warning');
             
         } catch (error) {
             console.error('刷新新闻时出错:', error);

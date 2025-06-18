@@ -24,8 +24,10 @@
     <meta name="twitter:description" content="Latest NBA basketball news from ESPN NBA and NBA Official sources">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="favicon.ico">
-    <link rel="apple-touch-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512x512.png">
     <link rel="manifest" href="manifest.json">
     
     <!-- Stylesheets -->
@@ -194,11 +196,28 @@
     <footer class="footer">
         <div class="container">
             <p>&copy; 2025 NBA News Hub. All rights reserved.</p>
-            <p>Latest basketball news from official sources</p>
+            <p>Latest basketball news from official sources - Deployed on Netlify</p>
         </div>
     </footer>
 
+    <!-- 引入静态数据和脚本 -->
     <script src="data.js"></script>
     <script src="script.js"></script>
+    
+    <!-- 初始化应用 -->
+    <script>
+        // 确保DOM加载完成后再初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM已加载，初始化NBA新闻应用...');
+            window.nbaApp = new NBANewsApp();
+        });
+        
+        // 全局加载新闻函数，用于空状态按钮
+        function loadNews() {
+            if (window.nbaApp) {
+                window.nbaApp.loadNews();
+            }
+        }
+    </script>
 </body>
 </html> 

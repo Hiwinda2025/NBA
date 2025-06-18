@@ -1,9 +1,22 @@
 [build]
   publish = "public"
-  command = "cp public/index-netlify.html public/index.html && cp public/script-netlify.js public/script.js"
+  command = "cp public/index-netlify.html public/index.html"
 
 [build.environment]
   NODE_VERSION = "18"
+
+[functions]
+  directory = "functions"
+
+[[redirects]]
+  from = "/api/news"
+  to = "/.netlify/functions/news"
+  status = 200
+
+[[redirects]]
+  from = "/api/refresh"
+  to = "/.netlify/functions/refresh"
+  status = 200
 
 [[headers]]
   for = "/*"
